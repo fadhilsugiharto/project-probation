@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	go handler.ConsumeNSQMessages()
+	//go handler.ConsumeNSQMessages()
 	r := mux.NewRouter()
 
 	// handle get products
