@@ -7,13 +7,13 @@ import (
 )
 
 const (
-	getQuery = "SELECT id, name, price FROM products WHERE CAST(id as TEXT) ILIKE '%' || $1 || '%' AND name ILIKE '%' || $2 || '%' AND CAST(price as TEXT) ILIKE '%' || $3 || '%'"
+	getQuery = "SELECT id, name, price FROM products"
 
 	insertQuery = "INSERT INTO products (name, price) VALUES ($1, $2) RETURNING id"
 )
 
-func Get(db *sql.DB, id string, name string, price string) ([]model.Product, error) {
-	rows, err := db.Query(getQuery, id, name, price)
+func Get(db *sql.DB) ([]model.Product, error) {
+	rows, err := db.Query(getQuery)
 	if err != nil {
 		log.Fatal("Error query to DB")
 		return nil, err

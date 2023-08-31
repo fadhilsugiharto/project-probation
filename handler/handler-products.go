@@ -13,7 +13,7 @@ import (
 	"strconv"
 )
 
-var isOutdated bool
+var isOutdated = true
 
 func InsertProduct(w http.ResponseWriter, r *http.Request) {
 	log.Println("Inserting product...")
@@ -70,17 +70,12 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 	log.Println("Retrieving product...")
 	var ctx = context.Background()
 
-	id := r.FormValue("id")
-	name := r.FormValue("name")
-	price := r.FormValue("price")
-	redisKey := fmt.Sprintf("id:%s,name:%s,price:%s", id, name, price)
-
 	//Try to get data from redis first
 	if !isOutdated {
 		log.Println("Retrieving product data from cache...")
-		productsFromRedis, err := redis.GetProductsFromRedis(ctx, redisKey)
+		productsFromRedis, err := redis.GetProductsFromRedis(ctx, "products")
 		if err == nil {
-			log.Println("Product data received from cache")
+			log.Println("Product data successfully retrieved from cache!")
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(productsFromRedis)
@@ -99,14 +94,14 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	// Get data from db
-	res, err := products.Get(db, id, name, price)
+	res, err := products.Get(db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Store data in Redis for future use
-	err = redis.StoreProductsInRedis(ctx, redisKey, res)
+	err = redis.StoreProductsInRedis(ctx, "products", res)
 	if err != nil {
 		log.Println("Insert redis error")
 	} else {
@@ -116,5 +111,5 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
-	log.Println("Product successfully retrieved!")
+	log.Println("Product successfully retrieved and cached!")
 }
