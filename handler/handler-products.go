@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"project-probation/database"
 	"project-probation/database/products"
+	"project-probation/model"
 	"project-probation/redis"
+	"strconv"
 )
 
 var isOutdated bool
@@ -33,7 +35,7 @@ func InsertProduct(w http.ResponseWriter, r *http.Request) {
 	price := r.FormValue("price")
 
 	// Insert product to db
-	_, err = products.Insert(db, name, price)
+	insertId, err := products.Insert(db, name, price)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -43,21 +45,21 @@ func InsertProduct(w http.ResponseWriter, r *http.Request) {
 	isOutdated = true
 
 	// Publish message to NSQ
-	//priceInt, err := strconv.Atoi(price)
-	//if err != nil {
-	//	http.Error(w, err.Error(), http.StatusInternalServerError)
-	//	return
-	//}
-	//product := model.Product{
-	//	ID:    insertId,
-	//	Name:  name,
-	//	Price: priceInt,
-	//}
-	//productJSON, _ := json.Marshal(product)
-	//err = nsqProducer.Publish("project_probation", productJSON)
-	//if err != nil {
-	//	log.Println("Failed to publish message to NSQ")
-	//}
+	priceInt, err := strconv.Atoi(price)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	product := model.Product{
+		ID:    insertId,
+		Name:  name,
+		Price: priceInt,
+	}
+	productJSON, _ := json.Marshal(product)
+	err = nsqProducer.Publish("project_probation", productJSON)
+	if err != nil {
+		log.Println("Failed to publish message to NSQ")
+	}
 
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "Product successfully inserted!")
