@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -15,8 +16,22 @@ import (
 
 var isOutdated = true
 
-func InsertProduct(w http.ResponseWriter, r *http.Request) {
-	log.Println("Inserting product...")
+type Handler interface {
+	InsertProduct(w http.ResponseWriter, r *http.Request)
+	GetProducts(w http.ResponseWriter, r *http.Request)
+}
+
+type handlerObj struct {
+	dbCon *sql.DB
+}
+
+func New(db *sql.DB) Handler {
+	return &handlerObj{
+		dbCon: db,
+	}
+}
+
+func (h *handlerObj) InsertProduct(w http.ResponseWriter, r *http.Request) {
 	// Initiate db connection
 	db, err := database.ConnectDB()
 	if err != nil {
@@ -41,7 +56,7 @@ func InsertProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Render the data in redis is outdated
+	// Render the data in redis outdated
 	isOutdated = true
 
 	// Publish message to NSQ
@@ -63,16 +78,13 @@ func InsertProduct(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "Product successfully inserted!")
-	log.Println("Product successfully inserted!")
 }
 
-func GetProducts(w http.ResponseWriter, r *http.Request) {
-	log.Println("Retrieving product...")
+func (h *handlerObj) GetProducts(w http.ResponseWriter, r *http.Request) {
 	var ctx = context.Background()
 
 	//Try to get data from redis first
 	if !isOutdated {
-		log.Println("Retrieving product data from cache...")
 		productsFromRedis, err := redis.GetProductsFromRedis(ctx, "products")
 		if err == nil {
 			log.Println("Product data successfully retrieved from cache!")
@@ -106,10 +118,9 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 		log.Println("Insert redis error")
 	} else {
 		isOutdated = false
-		log.Println("Product data is cached")
+		log.Println("Product successfully retrieved and cached!")
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
-	log.Println("Product successfully retrieved and cached!")
 }

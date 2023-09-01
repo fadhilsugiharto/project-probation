@@ -15,7 +15,7 @@ const (
 func Get(db *sql.DB) ([]model.Product, error) {
 	rows, err := db.Query(getQuery)
 	if err != nil {
-		log.Fatal("Error query to DB")
+		log.Println("Error query to DB")
 		return nil, err
 	}
 
@@ -26,7 +26,7 @@ func Get(db *sql.DB) ([]model.Product, error) {
 		product := model.Product{}
 		err := rows.Scan(&product.ID, &product.Name, &product.Price)
 		if err != nil {
-			log.Fatal("Error parsing data")
+			log.Println("Error parsing data")
 			return nil, err
 		}
 		products = append(products, product)
@@ -39,7 +39,7 @@ func Insert(db *sql.DB, name string, price string) (int, error) {
 	var insertId int
 	err := db.QueryRow(insertQuery, name, price).Scan(&insertId)
 	if err != nil {
-		log.Fatal("Error insert data")
+		log.Println("Error insert data")
 		return insertId, err
 	}
 

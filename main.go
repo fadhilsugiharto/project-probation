@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
+	"project-probation/database"
 	"project-probation/handler"
 
 	"github.com/gorilla/mux"
@@ -13,15 +13,19 @@ import (
 func main() {
 	go handler.ConsumeNSQMessages()
 	r := mux.NewRouter()
+	db, err := database.ConnectDB()
+	if err != nil {
+		log.Printf("err connect to db %v", err.Error())
+		return
+	}
+	h := handler.New(db)
 
 	// handle get products
-	r.HandleFunc("/products", handler.GetProducts).Methods("GET")
-
+	r.HandleFunc("/products", h.GetProducts).Methods("GET")
 	// handle insert products
-	r.HandleFunc("/products/insert", handler.InsertProduct).Methods("POST")
+	r.HandleFunc("/products/insert", h.InsertProduct).Methods("POST")
 
 	log.Println("Server is running on :8080")
 	http.Handle("/", r)
 	http.ListenAndServe(":8080", nil)
-	fmt.Println(7)
 }

@@ -48,8 +48,6 @@ func ConsumeNSQMessages() {
 	// Handle NSQ messages
 	consumer.AddHandler(nsq.HandlerFunc(func(message *nsq.Message) error {
 
-		log.Println("MASUK NSQ Consumer")
-
 		var product model.Product
 		err := json.Unmarshal(message.Body, &product)
 		if err != nil {
@@ -71,7 +69,6 @@ func ConsumeNSQMessages() {
 			return err
 		}
 
-		log.Println("Product successfully stored in ES")
 		return nil
 	}))
 
